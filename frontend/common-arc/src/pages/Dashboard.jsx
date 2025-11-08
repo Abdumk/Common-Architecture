@@ -1,25 +1,32 @@
-import React, { useEffect, useState, useContext } from 'react';
-import axios from 'axios';
-import { AuthContext } from '../context/AuthContext';
+import React, { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import UsersList from "../components/UsersList";
+import RolesList from "../components/RolesList";
+import AddRoleForm from "../components/AddRoleForm";
+import AssignPermissionForm from "../components/AssignPermissionForm";
+import AssignRoleForm from "../components/AssignRoleForm";
 
-export default function Dashboard() {
-  const { token, logout } = useContext(AuthContext);
-  const [users, setUsers] = useState([]);
-
-  useEffect(() => {
-    axios.get('http://localhost:5000/users', {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setUsers(res.data));
-  }, [token]);
+export default function AdminDashboard() {
+  const { user, logout } = useContext(AuthContext);
+  const perms = user?.permissions || [];
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      <h1>Admin Dashboard</h1>
+      <p>Welcome, {user?.username}</p>
       <button onClick={logout}>Logout</button>
-      <h2>Users</h2>
-      <ul>
-        {users.map(u => <li key={u.id}>{u.username}</li>)}
-      </ul>
+
+      {/* Users */ console.log("permissions-- ", perms, "user-- ", user)}
+      <UsersList canView={perms.includes("view_users")} />
+
+      <RolesList canManage={perms.includes("manage_roles")} />
+      <AddRoleForm canManage={perms.includes("manage_roles")} />
+
+      {/* <PermissionsList canManage={perms.includes("manage_roles")} /> */}
+      {/* <AddPermissionForm canManage={perms.includes("manage_roles")} /> */}
+
+      <AssignPermissionForm canManage={perms.includes("manage_roles")} />
+      <AssignRoleForm canManage={perms.includes("manage_roles")} />
     </div>
   );
 }

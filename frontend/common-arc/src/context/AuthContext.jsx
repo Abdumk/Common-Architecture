@@ -7,9 +7,26 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
+  // Whenever token changes, fetch user info
   useEffect(() => {
-    if (token) localStorage.setItem('token', token);
-    else localStorage.removeItem('token');
+    if (token) {
+      localStorage.setItem('token', token);
+
+      // Fetch user info from backend
+      axios.get('http://localhost:5000/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => setUser(res.data))
+      .catch(err => {
+        console.error("Failed to fetch user info:", err);
+        setUser(null);
+        setToken(null);
+      });
+
+    } else {
+      localStorage.removeItem('token');
+      setUser(null);
+    }
   }, [token]);
 
   const login = async (username, password) => {
