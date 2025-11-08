@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const dotenv = require('dotenv');
+const { verifyToken } = require("../middleware/authMiddleware");
 dotenv.config();
 
 // Register
@@ -43,11 +44,37 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET);
-    res.json({ token, user });
+    const [permRows] = await pool.query(`
+      SELECT p.name FROM permissions p
+      JOIN role_permissions rp ON p.id = rp.permission_id
+      JOIN roles r ON r.id = rp.role_id
+      JOIN user_roles ur ON ur.role_id = r.id
+      WHERE ur.user_id = ?
+    `, [user.id]);
+
+    const permissions = permRows.map(p => p.name);
+
+    // 4️⃣ Sign JWT and send response
+    const token = jwt.sign(
+      { id: user.id, username: user.username, permissions },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({
+      token,
+      user: { id: user.id, username: user.username, permissions }
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error" });
   }
+});
+
+router.get("/me", verifyToken, async (req, res) => {
+  // req.user is set by verifyToken middleware
+  res.json(req.user);
 });
 
 module.exports = router;

@@ -9,6 +9,9 @@ const { verifyToken } = require('./middleware/authMiddleware');
 
 dotenv.config();
 const app = express();
+const accessRoutes = require("./routes/access");
+
+
 
 app.use(cors());
 app.use(express.json());
@@ -16,6 +19,7 @@ app.use(express.json());
 // Routes
 app.use('/auth', authRoutes);
 app.use('/users', verifyToken, userRoutes);
+app.use("/api", accessRoutes);
 // app.use('/roles', verifyToken, roleRoutes);
 // app.use('/groups', verifyToken, groupRoutes);
 
